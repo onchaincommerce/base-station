@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Checkout, CheckoutButton, CheckoutStatus } from '@coinbase/onchainkit/checkout';
 import { products } from '@/lib/products';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import FloatingLogos from '@/components/FloatingLogos';
 
 const GlowingTitle = () => {
@@ -35,7 +34,6 @@ export default function Home() {
   const [taxRate, setTaxRate] = useState<number | null>(null);
   const [totalAmount, setTotalAmount] = useState<number | null>(null);
   const [zipCode, setZipCode] = useState('');
-  const [state, setState] = useState('');
   const [showZipForm, setShowZipForm] = useState(false);
   const [calculatedTax, setCalculatedTax] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);

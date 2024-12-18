@@ -1,29 +1,48 @@
 import { NextResponse } from 'next/server';
 
-// In a real app, you'd store this in a database
-const pendingCharges = new Map<string, { productId: string, status: string, downloadUrl?: string }>();
-
-export function updateChargeStatus(chargeId: string, productId: string, status: string, downloadUrl?: string) {
-  console.log('Updating charge status:', { chargeId, productId, status, downloadUrl });
-  pendingCharges.set(chargeId, { productId, status, downloadUrl });
-}
-
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const chargeId = searchParams.get('chargeId');
+  try {
+    const { searchParams } = new URL(request.url);
+    const chargeId = searchParams.get('chargeId');
 
-  if (!chargeId) {
-    return NextResponse.json({ error: 'No charge ID provided' }, { status: 400 });
+    if (!chargeId) {
+      return NextResponse.json({ error: 'Charge ID is required' }, { status: 400 });
+    }
+
+    const response = await fetch(`https://api.commerce.coinbase.com/charges/${chargeId}`, {
+      headers: {
+        'X-CC-Api-Key': process.env.COINBASE_COMMERCE_API_KEY || '',
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch charge status');
+    }
+
+    const data = await response.json();
+    
+    // Check if payment is confirmed
+    const isConfirmed = data.data.timeline.some(
+      (event: any) => event.status === 'COMPLETED'
+    );
+
+    if (isConfirmed) {
+      // In a real app, you would generate or fetch the actual download URL
+      const downloadUrl = `/api/download?chargeId=${chargeId}`;
+      return NextResponse.json({ downloadUrl });
+    }
+
+    return NextResponse.json({ status: 'pending' });
+
+  } catch (error) {
+    console.error('Error checking charge status:', error);
+    return NextResponse.json(
+      { 
+        error: 'Failed to check charge status',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
   }
-
-  const chargeData = pendingCharges.get(chargeId);
-  
-  if (!chargeData) {
-    return NextResponse.json({ status: 'unknown' });
-  }
-
-  return NextResponse.json({
-    status: chargeData.status,
-    downloadUrl: chargeData.downloadUrl
-  });
 } 
